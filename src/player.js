@@ -86,6 +86,14 @@ export class Player {
     this.applyCamera(dt);
   }
 
+  // Topple over sideways when you die. t runs 0 -> 1.
+  deathCam(t, dt) {
+    const e = 1 - Math.pow(1 - Math.min(1, t), 3);
+    this.shake = Math.max(0, this.shake - dt * 2.5);
+    this.camera.position.set(this.position.x, EYE_HEIGHT - (EYE_HEIGHT - 0.3) * e, this.position.z);
+    this.camera.rotation.set(this.pitch * (1 - e) + 0.3 * e, this.yaw, 1.25 * e, 'YXZ');
+  }
+
   applyCamera(dt) {
     this.shake = Math.max(0, this.shake - dt * 2.5);
     this.recoilPitch *= Math.exp(-dt * 12);
