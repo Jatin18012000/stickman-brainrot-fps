@@ -5,6 +5,8 @@ import { Player } from './player.js';
 import { Weapon } from './weapon.js';
 import { Effects } from './effects.js';
 import { sfx, unlockAudio } from './audio.js';
+import { EnemyManager } from './enemy.js';
+import { SPAWN_POINTS } from './arena.js';
 
 const MAX_SHOT_RANGE = 120;
 const _origin = new THREE.Vector3();
@@ -36,6 +38,9 @@ export class Game {
     this.player = new Player(this.camera, this.arena);
     this.weapon = new Weapon();
     this.effects = new Effects(this.scene);
+    this.enemies = new EnemyManager(this.scene, this.arena, this.effects);
+    this.enemies.onPlayerHit = (damage) => this.damagePlayer(damage);
+    this.hitTest = (o, d, maxT) => this.enemies.raycast(o, d, maxT);
     this.renderer.autoClear = false;
 
     this.state = 'menu';
@@ -58,6 +63,8 @@ export class Game {
     this.player.reset();
     this.weapon.setStats(1, 1, 0xff3b3b);
     this.effects.clear();
+    this.enemies.clear();
+    this.spawnTimer = 0;
     this.state = 'playing';
     this.input.requestLock();
     this.ui.onStart();
@@ -84,6 +91,14 @@ export class Game {
     if (this.state === 'playing') {
       this.player.update(dt, this.input);
       if (this.weapon.update(dt, this.player, this.input.fireHeld)) this.shoot();
+      this.enemies.update(dt, this.player);
+      // Temporary spawner until waves exist.
+      this.spawnTimer -= dt;
+      if (this.spawnTimer <= 0 && this.enemies.aliveCount < 4) {
+        const [x, z] = SPAWN_POINTS[Math.floor(Math.random() * SPAWN_POINTS.length)];
+        this.enemies.spawn('normal', x, z);
+        this.spawnTimer = 3;
+      }
     }
     if (this.state !== 'paused') this.effects.update(dt);
     this.renderer.clear();
@@ -110,5 +125,16 @@ export class Game {
     return hit;
   }
 
-  onHit() {}
+  onHit(hit, point, dir) {
+    const killed = this.enemies.damage(hit.enemy, this.weapon.damage, dir, hit.head);
+    this.effects.burst(point, hit.head ? 0xff3b6b : hit.enemy.type.body, hit.head ? 10 : 6, 3, 1.5);
+    if (!killed) (hit.head ? sfx.headshot : sfx.hit)();
+  }
+
+  damagePlayer(amount) {
+    const p = this.player;
+    p.health = Math.max(0, p.health - amount);
+    p.shake = Math.min(1, p.shake + 0.5 + amount / 40);
+    sfx.playerHurt();
+  }
 }
