@@ -10,6 +10,10 @@ Runs in any modern desktop browser. Needs a mouse and keyboard.
 
 ## Play it
 
+**In your browser:** https://jatin18012000.github.io/stickman-brainrot-fps/
+
+**Locally:**
+
 ```bash
 npm install
 npm run dev
@@ -25,6 +29,14 @@ npm run preview    # serves dist/ locally to check it
 ```
 
 The build uses relative paths, so `dist/` works from any sub-folder.
+
+### GitHub Pages
+
+`.github/workflows/pages.yml` builds and publishes the game on every push to
+`main`. It needs Pages switched on once by a repository admin:
+**Settings → Pages → Build and deployment → Source: GitHub Actions**. After
+that, re-run the workflow (Actions tab → Deploy to GitHub Pages → Run workflow)
+or push any commit.
 
 ## Controls
 
