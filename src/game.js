@@ -8,14 +8,11 @@ import { sfx, unlockAudio } from './audio.js';
 import { EnemyManager } from './enemy.js';
 import { WaveManager, WAVE_CLEAR_HEAL } from './waves.js';
 import { Hud } from './hud.js';
+import { CHARACTERS } from './characters.js';
 
 const MAX_SHOT_RANGE = 120;
 const DEATH_CAM_TIME = 1.4;
 const BEST_KEY = 'stickman-brainrot-fps:best';
-const DEFAULT_CHARACTER = {
-  key: 'red', name: 'RED', role: 'ASSAULT', color: 0xff3b3b, css: '#ff3b3b',
-  health: 100, speed: 1, damage: 1, fireRate: 1,
-};
 
 const _origin = new THREE.Vector3();
 const _dir = new THREE.Vector3();
@@ -58,7 +55,7 @@ export class Game {
 
     this.state = 'menu';
     this.onStateChange = null;
-    this.character = DEFAULT_CHARACTER;
+    this.character = CHARACTERS.red;
     this.score = 0;
     this.kills = 0;
     this.best = loadBest();

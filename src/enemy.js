@@ -6,7 +6,7 @@ import { sfx } from './audio.js';
 // Enemy stat blocks. Speeds are metres per second; the player runs at 7.
 export const ENEMY_TYPES = {
   normal: {
-    label: 'NORMAL STICK', health: 75, speed: 3.6, damage: 10, score: 100,
+    label: 'NORMAL STICK', health: 65, speed: 3.6, damage: 10, score: 100,
     scale: 1, radius: 0.45, reach: 0.9, windup: 0.4, cooldown: 1.0, mass: 1,
     body: 0x1b1530, head: 0xffffff,
   },
