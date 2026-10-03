@@ -3,3 +3,13 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #14111f; c
   font-family: 'Arial Black', 'Segoe UI', system-ui, sans-serif; user-select: none; }
 #game, #game canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
 #ui { position: fixed; inset: 0; pointer-events: none; }
+.hidden { display: none !important; }
+.overlay { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 24px; background: rgba(20, 17, 31, 0.6); pointer-events: auto; }
+.btn { font: inherit; font-size: 22px; padding: 12px 40px; border: 3px solid #fff; background: #ff3b6b;
+  color: #fff; cursor: pointer; }
+.crosshair { position: fixed; left: 50%; top: 50%; width: 22px; height: 22px; transform: translate(-50%, -50%); }
+.crosshair::before, .crosshair::after { content: ''; position: absolute; background: #fff;
+  box-shadow: 0 0 0 1.5px #000; }
+.crosshair::before { left: 50%; top: 0; width: 2px; height: 100%; transform: translateX(-50%); }
+.crosshair::after { top: 50%; left: 0; height: 2px; width: 100%; transform: translateY(-50%); }
