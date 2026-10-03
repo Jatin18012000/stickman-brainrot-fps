@@ -1,4 +1,4 @@
-import { sfx } from './audio.js';
+import { sfx, toggleMute, isMuted } from './audio.js';
 import { CHARACTERS, CHARACTER_ORDER, loadPick, savePick } from './characters.js';
 
 const BAR_BLOCKS = 10;
@@ -24,7 +24,26 @@ export class UI {
   }
 
   onKey(e) {
+    if (e.code === 'KeyM' && !e.repeat) {
+      const muted = toggleMute();
+      const tag = this.screen.querySelector('[data-mute]');
+      if (tag) tag.textContent = muteLabel(muted);
+      if (this.game.state === 'playing') this.game.hud.announce(muted ? 'MUTED' : 'SOUND ON', '', 0.9);
+      return;
+    }
+    // A focused button already handles Enter/Space itself.
+    const onButton = document.activeElement && document.activeElement.tagName === 'BUTTON';
+    if (this.current === 'gameover' && !onButton && (e.code === 'Enter' || e.code === 'Space') && !e.repeat) {
+      e.preventDefault();
+      this.game.start();
+      return;
+    }
     if (this.current !== 'select') return;
+    if (e.code === 'Enter' && !e.repeat && !onButton) {
+      e.preventDefault();
+      this.game.start(CHARACTERS[this.pick]);
+      return;
+    }
     const i = CHARACTER_ORDER.indexOf(this.pick);
     let next = null;
     if (e.code === 'Digit1' || e.code === 'Digit2' || e.code === 'Digit3') next = CHARACTER_ORDER[Number(e.code.slice(-1)) - 1];
@@ -54,6 +73,7 @@ export class UI {
     else if (action === 'pick') this.select(btn.dataset.key);
     else if (action === 'start') g.start(CHARACTERS[this.pick]);
     else if (action === 'back') this.show('main');
+    else if (action === 'howto') this.show('howto');
     else if (action === 'resume') g.resume();
     else if (action === 'restart') g.start();
     else if (action === 'menu') { g.quitToMenu(); }
@@ -80,11 +100,41 @@ export class UI {
   }
 
   render_main() {
+    const c = CHARACTERS[this.pick];
+    const best = this.game.best;
     return `
-      <div class="title">STICKMAN <span class="accent">BRAIN ROT</span> FPS</div>
+      <div class="title">STICKMAN<br><span class="accent">BRAIN ROT</span> FPS</div>
       <div class="subtitle">ENTER THE BRAINROT.</div>
       <div class="menu-buttons">
         <button class="btn go" data-action="play">PLAY</button>
+        <button class="btn" data-action="characters">CHARACTERS</button>
+        <button class="btn alt" data-action="howto">HOW TO PLAY</button>
+      </div>
+      <div class="selected-tag">STICK: <span style="color:${c.css}">${c.name}</span> · ${c.role}</div>
+      ${best > 0 ? `<div class="hint">BEST SCORE: ${String(best).padStart(6, '0')}</div>` : ''}
+      <div class="hint" data-mute>${muteLabel(isMuted())}</div>`;
+  }
+
+  render_howto() {
+    const key = (k, label) => `<div class="key-row"><span class="key">${k}</span><span class="key-label">${label}</span></div>`;
+    return `
+      <h2>HOW TO PLAY</h2>
+      <div class="keys">
+        ${key('WASD', 'MOVE')}
+        ${key('MOUSE', 'AIM')}
+        ${key('LEFT CLICK', 'SHOOT (HOLD FOR AUTO)')}
+        ${key('ESC', 'RELEASE MOUSE / PAUSE')}
+        ${key('M', 'MUTE')}
+      </div>
+      <div class="objective">SURVIVE. GET KILLS. DON'T GET COOKED.</div>
+      <div class="howto-notes">
+        <div><b style="color:#fff">NORMAL STICK</b> 100 pts · <b style="color:#ff9a2e">FAST STICK</b> 150 pts · <b style="color:#b07aff">BIG STICK</b> 300 pts</div>
+        <div>Headshots deal double damage. Back off when a stick raises its arms to dodge the bonk.</div>
+        <div>Clearing a wave heals you a little.</div>
+      </div>
+      <div class="row-buttons">
+        <button class="btn go" data-action="play">PLAY</button>
+        <button class="btn alt" data-action="back">BACK</button>
       </div>`;
   }
 
@@ -121,6 +171,7 @@ export class UI {
     return `
       <h2>PAUSED</h2>
       <div class="hint">The mouse is free. Click resume to jump back in.</div>
+      <div class="hint">WASD move · MOUSE aim · CLICK shoot · M mute</div>
       <div class="menu-buttons">
         <button class="btn go" data-action="resume">RESUME</button>
         <button class="btn alt" data-action="menu">QUIT TO MENU</button>
@@ -140,8 +191,13 @@ export class UI {
       <div class="row-buttons">
         <button class="btn go" data-action="restart">RESTART</button>
         <button class="btn alt" data-action="menu">MAIN MENU</button>
-      </div>`;
+      </div>
+      <div class="hint">ENTER to restart</div>`;
   }
+}
+
+function muteLabel(muted) {
+  return muted ? 'SOUND OFF · M to unmute' : 'SOUND ON · M to mute';
 }
 
 function statRow(label, frac, value) {

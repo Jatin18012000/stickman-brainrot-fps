@@ -144,3 +144,14 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: var(--ink)
 .stat-bar i { flex: 1; height: 11px; background: rgba(255,255,255,.15); }
 .stat-bar i.on { background: var(--c); box-shadow: inset 0 -2px 0 rgba(0,0,0,.35); }
 .char-blurb { font-size: 12px; margin-top: 8px; opacity: .85; font-family: system-ui, sans-serif; font-weight: 700; }
+
+/* ---------- How to play ---------- */
+.keys { display: flex; flex-direction: column; gap: 10px; min-width: min(420px, 100%); }
+.key-row { display: grid; grid-template-columns: 170px 1fr; align-items: center; gap: 16px; text-align: left; }
+.key { justify-self: end; font-size: 18px; padding: 7px 14px; background: #fff; color: var(--ink);
+  border-radius: 6px; box-shadow: 0 5px 0 #8a7fa8, 4px 9px 0 #000; }
+.key-label { font-size: 20px; }
+.objective { font-size: clamp(18px, 3vw, 28px); color: var(--yellow); margin-top: 10px; text-shadow: 3px 3px 0 #000;
+  transform: rotate(-1.5deg); }
+.howto-notes { display: flex; flex-direction: column; gap: 6px; font-size: 14px; max-width: 640px; line-height: 1.4;
+  font-family: system-ui, sans-serif; font-weight: 700; opacity: .9; }
