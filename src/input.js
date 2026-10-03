@@ -5,9 +5,10 @@ const MOVE_KEYS = new Set([
   'KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space',
 ]);
 
-// Some platforms report a huge movementX/Y spike on the first event after the
-// pointer is captured. Clamping one event stops the view snapping sideways.
-const MAX_MOUSE_STEP = 250;
+// Some browsers report a huge movementX/Y spike when the pointer is captured
+// (the cursor's jump to the lock point) and occasionally at random. No real
+// flick moves this far in a single event, so such events are dropped.
+const MAX_MOUSE_STEP = 300;
 
 export class InputManager {
   constructor(lockTarget) {
@@ -17,6 +18,8 @@ export class InputManager {
     this.mouseDY = 0;
     this.fireHeld = false;
     this.locked = false;
+    this.ignoreMouseUntil = 0;
+    this.lockedOnLastMove = false;
     this.onLockChange = null;
     this.onLockError = null;
 
@@ -28,9 +31,17 @@ export class InputManager {
     window.addEventListener('blur', () => this.clear());
 
     document.addEventListener('mousemove', (e) => {
-      if (!this.locked) return;
-      this.mouseDX += clamp(e.movementX || 0, -MAX_MOUSE_STEP, MAX_MOUSE_STEP);
-      this.mouseDY += clamp(e.movementY || 0, -MAX_MOUSE_STEP, MAX_MOUSE_STEP);
+      // Read the lock state directly: pointerlockchange can arrive after the
+      // first locked mousemove events.
+      const lockedNow = document.pointerLockElement === this.lockTarget;
+      const firstLocked = lockedNow && !this.lockedOnLastMove;
+      this.lockedOnLastMove = lockedNow;
+      if (!lockedNow || !this.locked || firstLocked || performance.now() < this.ignoreMouseUntil) return;
+      const mx = e.movementX || 0;
+      const my = e.movementY || 0;
+      if (Math.abs(mx) > MAX_MOUSE_STEP || Math.abs(my) > MAX_MOUSE_STEP) return;
+      this.mouseDX += mx;
+      this.mouseDY += my;
     });
     document.addEventListener('mousedown', (e) => {
       if (this.locked && e.button === 0) this.fireHeld = true;
@@ -44,7 +55,11 @@ export class InputManager {
 
     document.addEventListener('pointerlockchange', () => {
       this.locked = document.pointerLockElement === this.lockTarget;
-      if (!this.locked) this.clear();
+      // The first movement event after capture can carry the cursor's whole
+      // jump to the lock point; ignore input for a moment so the view doesn't snap.
+      if (this.locked) this.ignoreMouseUntil = performance.now() + 80;
+      if (this.locked) this.consumeMouse();
+      else this.clear();
       if (this.onLockChange) this.onLockChange(this.locked);
     });
     document.addEventListener('pointerlockerror', () => {
@@ -95,8 +110,4 @@ export class InputManager {
       - (this.down('KeyA') || this.down('ArrowLeft') ? 1 : 0);
     return { forward, strafe };
   }
-}
-
-function clamp(v, lo, hi) {
-  return v < lo ? lo : v > hi ? hi : v;
 }

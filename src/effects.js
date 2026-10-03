@@ -19,7 +19,7 @@ export class Effects {
     geo.setAttribute('color', new THREE.BufferAttribute(this.colors, 3).setUsage(THREE.DynamicDrawUsage));
     geo.setDrawRange(0, 0);
     this.points = new THREE.Points(geo, new THREE.PointsMaterial({
-      size: 0.18, vertexColors: true, sizeAttenuation: true,
+      size: 0.12, vertexColors: true, sizeAttenuation: true,
     }));
     this.points.frustumCulled = false;
     scene.add(this.points);

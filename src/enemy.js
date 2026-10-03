@@ -354,6 +354,12 @@ export class EnemyManager {
     e.legL.rotation.x = swing;
     e.legR.rotation.x = -swing;
     let lean = e.typeKey === 'fast' ? 0.35 * s : 0.08 * s;
+    // Heads glow red while winding up so the swing is easy to read.
+    const glow = e.state === 'windup' && e.flash <= 0 ? 1 - Math.max(0, e.timer) / e.type.windup : 0;
+    if (glow > 0 || e.glowing) {
+      e.headMat.emissive.setRGB(glow * 0.9, 0, 0);
+      e.glowing = glow > 0;
+    }
     if (e.state === 'windup') {
       // Arms up, lean back: "I'm about to bonk you".
       const k = 1 - e.timer / e.type.windup;

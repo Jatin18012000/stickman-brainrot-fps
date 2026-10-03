@@ -4,7 +4,7 @@ import { ARENA_HALF } from './arena.js';
 export const BASE_MOVE_SPEED = 7; // metres per second at 1.00x speed
 const EYE_HEIGHT = 1.6;
 const RADIUS = 0.4;
-const MOUSE_SENSITIVITY = 0.0022;
+const BASE_SENSITIVITY = 0.0022; // radians per pixel at 1.0x
 const PITCH_LIMIT = THREE.MathUtils.degToRad(85);
 const ACCEL = 14;
 const DECEL = 10;
@@ -26,6 +26,7 @@ export class Player {
     this.bobAmount = 0;
     this.shake = 0;
     this.recoilPitch = 0;
+    this.sensitivity = 1;
   }
 
   reset(stats = { health: 100, speed: 1 }) {
@@ -52,8 +53,9 @@ export class Player {
 
   update(dt, input) {
     const mouse = input.consumeMouse();
-    this.yaw -= mouse.x * MOUSE_SENSITIVITY;
-    this.pitch -= mouse.y * MOUSE_SENSITIVITY;
+    const sens = BASE_SENSITIVITY * this.sensitivity;
+    this.yaw -= mouse.x * sens;
+    this.pitch -= mouse.y * sens;
     this.pitch = THREE.MathUtils.clamp(this.pitch, -PITCH_LIMIT, PITCH_LIMIT);
 
     const { forward, strafe } = input.moveAxes();

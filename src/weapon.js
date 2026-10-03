@@ -6,8 +6,8 @@ import * as THREE from 'three';
 export const WEAPON_NAME = 'STICK BLASTER';
 export const BASE_DAMAGE = 25;
 export const BASE_FIRE_INTERVAL = 0.2; // seconds between shots at 1.00x fire rate
-const REST = new THREE.Vector3(0.25, -0.25, -0.62);
-const MUZZLE_LOCAL = new THREE.Vector3(0.25, -0.23, -1.1);
+const REST = new THREE.Vector3(0.21, -0.21, -0.5);
+const MUZZLE_LOCAL = new THREE.Vector3(0.2, -0.19, -0.95);
 
 export class Weapon {
   constructor() {
@@ -81,7 +81,7 @@ export class Weapon {
     this.gun.add(this.flash);
 
     this.root.position.copy(REST);
-    this.root.scale.setScalar(0.8);
+    this.root.scale.setScalar(0.62);
   }
 
   addLimb(mat, from, to) {

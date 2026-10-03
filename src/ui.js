@@ -2,6 +2,8 @@ import { sfx, toggleMute, isMuted } from './audio.js';
 import { CHARACTERS, CHARACTER_ORDER, loadPick, savePick } from './characters.js';
 
 const BAR_BLOCKS = 10;
+const SENS_KEY = 'stickman-brainrot-fps:sensitivity';
+const TOUCH_ONLY = window.matchMedia && window.matchMedia('(hover: none) and (pointer: coarse)').matches;
 
 // Menu screens. Each screen is plain HTML; buttons carry data-action and are
 // handled in one place.
@@ -18,6 +20,16 @@ export class UI {
       this.handle(btn.dataset.action, btn);
     });
     this.pick = loadPick();
+    game.player.sensitivity = loadSensitivity();
+    this.screen.addEventListener('input', (e) => {
+      if (e.target.matches('[data-sens]')) {
+        const v = Number(e.target.value);
+        game.player.sensitivity = v;
+        saveSensitivity(v);
+        const out = this.screen.querySelector('[data-sens-out]');
+        if (out) out.textContent = `${v.toFixed(2)}x`;
+      }
+    });
     document.addEventListener('keydown', (e) => this.onKey(e));
     game.onStateChange = (state, data) => this.onState(state, data);
     this.show('main');
@@ -110,6 +122,7 @@ export class UI {
         <button class="btn" data-action="characters">CHARACTERS</button>
         <button class="btn alt" data-action="howto">HOW TO PLAY</button>
       </div>
+      ${TOUCH_ONLY ? '<div class="touch-note">This one needs a mouse and keyboard. Hop on a laptop or desktop.</div>' : ''}
       <div class="selected-tag">STICK: <span style="color:${c.css}">${c.name}</span> · ${c.role}</div>
       ${best > 0 ? `<div class="hint">BEST SCORE: ${String(best).padStart(6, '0')}</div>` : ''}
       <div class="hint" data-mute>${muteLabel(isMuted())}</div>`;
@@ -127,6 +140,7 @@ export class UI {
         ${key('M', 'MUTE')}
       </div>
       <div class="objective">SURVIVE. GET KILLS. DON'T GET COOKED.</div>
+      ${this.sensitivityControl()}
       <div class="howto-notes">
         <div><b style="color:#fff">NORMAL STICK</b> 100 pts · <b style="color:#ff9a2e">FAST STICK</b> 150 pts · <b style="color:#b07aff">BIG STICK</b> 300 pts</div>
         <div>Headshots deal double damage. Back off when a stick raises its arms to dodge the bonk.</div>
@@ -167,11 +181,21 @@ export class UI {
       <div class="hint">1 / 2 / 3 or ← → to pick</div>`;
   }
 
+  sensitivityControl() {
+    const v = this.game.player.sensitivity;
+    return `
+      <label class="sens">MOUSE SENSITIVITY
+        <input type="range" min="0.2" max="3" step="0.05" value="${v}" data-sens>
+        <span data-sens-out>${v.toFixed(2)}x</span>
+      </label>`;
+  }
+
   render_pause() {
     return `
       <h2>PAUSED</h2>
       <div class="hint">The mouse is free. Click resume to jump back in.</div>
       <div class="hint">WASD move · MOUSE aim · CLICK shoot · M mute</div>
+      ${this.sensitivityControl()}
       <div class="menu-buttons">
         <button class="btn go" data-action="resume">RESUME</button>
         <button class="btn alt" data-action="menu">QUIT TO MENU</button>
@@ -194,6 +218,23 @@ export class UI {
         <button class="btn alt" data-action="menu">MAIN MENU</button>
       </div>
       <div class="hint">ENTER to restart</div>`;
+  }
+}
+
+function loadSensitivity() {
+  try {
+    const v = Number(localStorage.getItem(SENS_KEY));
+    return v >= 0.2 && v <= 3 ? v : 1;
+  } catch {
+    return 1;
+  }
+}
+
+function saveSensitivity(v) {
+  try {
+    localStorage.setItem(SENS_KEY, String(v));
+  } catch {
+    /* not remembered */
   }
 }
 
