@@ -9,6 +9,10 @@ import { EnemyManager } from './enemy.js';
 import { WaveManager, WAVE_CLEAR_HEAL } from './waves.js';
 import { Hud } from './hud.js';
 import { CHARACTERS } from './characters.js';
+import { ENEMY_NAMES, nameTag, killLine, waveStartLine, waveClearLine, pick, GAME_OVER_LINES } from './brainrot.js';
+
+const STREAK_WINDOW = 1.6;
+const TAG_COLORS = { normal: '#ffffff', fast: '#ffb347', big: '#d7b8ff' };
 
 const MAX_SHOT_RANGE = 120;
 const DEATH_CAM_TIME = 1.4;
@@ -50,6 +54,10 @@ export class Game {
 
     this.enemies.onPlayerHit = (damage) => this.damagePlayer(damage);
     this.enemies.onKill = (enemy, head) => this.handleKill(enemy, head);
+    this.enemies.decorate = (enemy) => {
+      enemy.name = pick(ENEMY_NAMES[enemy.typeKey]);
+      enemy.setLabel(nameTag(enemy.name, TAG_COLORS[enemy.typeKey]));
+    };
     this.waves.onWaveStart = (wave, count) => this.handleWaveStart(wave, count);
     this.waves.onWaveClear = (wave) => this.handleWaveClear(wave);
 
@@ -60,6 +68,8 @@ export class Game {
     this.kills = 0;
     this.best = loadBest();
     this.menuTime = 0;
+    this.streak = 0;
+    this.streakTimer = 0;
 
     this.input.onLockChange = (locked) => this.handleLockChange(locked);
     this.input.onLockError = () => {
@@ -74,12 +84,14 @@ export class Game {
 
     window.addEventListener('resize', () => this.resize());
     this.lastTime = performance.now();
+    this.enemies.spawnDancers();
     this.renderer.setAnimationLoop(() => this.frame());
   }
 
   setState(state, data) {
     this.state = state;
     this.hud.show(state === 'playing' || state === 'dying');
+    this.hud.root.classList.toggle('dead', state === 'dying');
     if (this.onStateChange) this.onStateChange(state, data);
   }
 
@@ -100,6 +112,8 @@ export class Game {
     this.enemies.clear();
     this.score = 0;
     this.kills = 0;
+    this.streak = 0;
+    this.streakTimer = 0;
     this.hud.reset();
     this.hud.setCharacter(character);
     this.setState('playing');
@@ -118,6 +132,7 @@ export class Game {
     this.enemies.clear();
     this.effects.clear();
     this.waves.reset();
+    this.enemies.spawnDancers();
     this.setState('menu');
   }
 
@@ -148,6 +163,7 @@ export class Game {
       this.waves.update(dt, this.player);
       this.effects.update(dt);
       this.hud.update(dt, this);
+      this.streakTimer -= dt;
     } else if (s === 'dying') {
       this.deathTimer -= dt;
       this.player.deathCam(1 - this.deathTimer / DEATH_CAM_TIME, dt);
@@ -155,11 +171,18 @@ export class Game {
       this.effects.update(dt);
       this.hud.update(dt, this);
       if (this.deathTimer <= 0) this.finishGame();
+    } else if (s === 'gameover') {
+      // Keep the victory dance going behind the game-over screen.
+      this.enemies.update(dt, this.player);
+      this.effects.update(dt);
     } else if (s === 'menu') {
+      // Drift in front of the dancing sticks, keeping them right of the menu.
       this.menuTime += dt;
-      const a = this.menuTime * 0.08;
-      this.camera.position.set(Math.sin(a) * 20, 9, Math.cos(a) * 20);
-      this.camera.lookAt(0, 0, 0);
+      const a = Math.sin(this.menuTime * 0.15) * 0.55;
+      const shift = this.camera.aspect > 1.2 ? 3.2 : 0;
+      this.camera.position.set(Math.sin(a) * 7, 2.4, 2 + Math.cos(a) * 7);
+      this.camera.lookAt(-Math.cos(a) * shift, 1.3, 2 + Math.sin(a) * shift);
+      this.enemies.update(dt, this.player);
       this.effects.update(dt);
     }
   }
@@ -189,11 +212,14 @@ export class Game {
   handleKill(enemy, head) {
     this.kills++;
     this.score += enemy.type.score;
-    this.hud.killMessage(head ? 'HEADSHOT' : 'COOKED', `+${enemy.type.score}`);
+    this.streak = this.streakTimer > 0 ? this.streak + 1 : 1;
+    this.streakTimer = STREAK_WINDOW;
+    const sub = `+${enemy.type.score}${head ? ' · HEADSHOT' : ''}`;
+    this.hud.killMessage(killLine(enemy, head, this.streak), sub);
   }
 
   handleWaveStart(wave, count) {
-    this.hud.announce(`WAVE ${wave}`, `${count} STICKS INCOMING`);
+    this.hud.announce(`WAVE ${wave}`, `${count} STICKS · ${waveStartLine(wave)}`);
     sfx.waveStart();
   }
 
@@ -201,7 +227,7 @@ export class Game {
     const p = this.player;
     const healed = Math.min(WAVE_CLEAR_HEAL, p.maxHealth - p.health);
     p.health += healed;
-    this.hud.announce(`WAVE ${wave} CLEARED`, healed > 0 ? `+${Math.round(healed)} HP` : 'FULL HP');
+    this.hud.announce(`WAVE ${wave} CLEARED`, `${waveClearLine()} · ${healed > 0 ? `+${Math.round(healed)} HP` : 'FULL HP'}`);
     sfx.waveClear();
   }
 
@@ -219,6 +245,7 @@ export class Game {
     this.player.alive = false;
     this.input.fireHeld = false;
     this.deathTimer = DEATH_CAM_TIME;
+    this.enemies.celebrate();
     sfx.gameOver();
     this.setState('dying');
   }
@@ -232,6 +259,7 @@ export class Game {
     this.input.exitLock();
     this.setState('gameover', {
       score: this.score, kills: this.kills, wave: this.waves.wave, best: this.best, newBest,
+      line: pick(GAME_OVER_LINES), character: this.character,
     });
   }
 }

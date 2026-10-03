@@ -93,7 +93,7 @@ export class UI {
 
   show(name, data) {
     this.current = name;
-    this.screen.className = `screen${name === 'pause' || name === 'gameover' ? ' dim' : ''}`;
+    this.screen.className = `screen screen-${name}${name === 'pause' || name === 'gameover' ? ' dim' : ''}`;
     this.screen.innerHTML = this[`render_${name}`](data);
     const first = this.screen.querySelector('.btn');
     if (first) first.focus({ preventScroll: true });
@@ -181,6 +181,7 @@ export class UI {
   render_gameover(d) {
     return `
       <h2>YOU GOT COOKED 💀</h2>
+      <div class="subtitle">${d.line}</div>
       <div class="stats-card">
         <div>SCORE: <span class="big">${String(d.score).padStart(6, '0')}</span></div>
         <div>KILLS: ${d.kills}</div>

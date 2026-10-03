@@ -263,6 +263,10 @@ export class EnemyManager {
       this.updateDeath(e, dt);
       return;
     }
+    if (e.state === 'dance') {
+      this.dance(e, dt);
+      return;
+    }
 
     // Always turn to face the player.
     const want = Math.atan2(dx, dz);
@@ -364,6 +368,59 @@ export class EnemyManager {
     }
     if (e.stagger > 0) lean = -0.45;
     e.body.rotation.x += (lean - e.body.rotation.x) * Math.min(1, dt * 14);
+  }
+
+  // Everyone left alive hits the griddy (used when the player dies).
+  celebrate() {
+    for (const e of this.enemies) {
+      if (!e.alive) continue;
+      e.state = 'dance';
+      e.body.position.y = 0;
+      e.danceStyle = Math.floor(Math.random() * 3);
+    }
+  }
+
+  // A little line of dancing sticks for the main menu.
+  spawnDancers() {
+    const keys = ['fast', 'normal', 'big', 'normal', 'fast'];
+    keys.forEach((k, i) => {
+      const e = this.spawn(k, (i - 2) * 2.6, 2);
+      e.state = 'dance';
+      e.body.position.y = 0;
+      e.danceStyle = i % 3;
+      e.walkPhase = i * 0.7;
+      if (e.label) e.label.visible = false;
+    });
+  }
+
+  dance(e, dt) {
+    e.walkPhase += dt * 9;
+    const t = e.walkPhase;
+    const s = Math.sin(t);
+    if (e.danceStyle === 0) {
+      // Griddy: knees up, arms pumping.
+      e.legL.rotation.x = Math.max(0, s) * -1.1;
+      e.legR.rotation.x = Math.max(0, -s) * -1.1;
+      e.armL.rotation.x = -1.2 + s * 0.8;
+      e.armR.rotation.x = -1.2 - s * 0.8;
+      e.body.position.y = Math.abs(s) * 0.12 * e.scale;
+    } else if (e.danceStyle === 1) {
+      // Arms in the air, side to side.
+      e.armL.rotation.x = e.armR.rotation.x = -2.9;
+      e.armL.rotation.z = -0.4 + s * 0.3;
+      e.armR.rotation.z = 0.4 + s * 0.3;
+      e.body.rotation.z = s * 0.25;
+      e.body.position.y = Math.abs(Math.cos(t)) * 0.18 * e.scale;
+    } else {
+      // Spin and bounce.
+      e.facing += dt * 5;
+      e.armL.rotation.x = e.armR.rotation.x = -1.57;
+      e.legL.rotation.x = s * 0.4;
+      e.legR.rotation.x = -s * 0.4;
+      e.body.position.y = Math.abs(s) * 0.25 * e.scale;
+    }
+    e.body.rotation.x += (0 - e.body.rotation.x) * Math.min(1, dt * 10);
+    e.root.rotation.y = e.facing;
   }
 
   updateDeath(e, dt) {
